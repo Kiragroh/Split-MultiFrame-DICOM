@@ -1,7 +1,7 @@
 # Split-MultiFrame-DICOM
 
 ## Introduction
-**Split-MultiFrame-DICOM** is a tool to split Multi-Frame DICOM files into individual DICOM files. This is especially useful for users of the Eclipse TPS by Varian, which does not support Multi-Frame DICOM files.
+**Split-MultiFrame-DICOM** is a tool to split Multi-Frame DICOM files into individual DICOM files. This is especially useful for users of the Eclipse TPS by Varian (<= v.18), which does not support Multi-Frame DICOM files.
 
 ## Disclaimer
 This tool is provided without clinical recommendation. It is not intended for clinical use and should only be used for testing and research purposes. Use this tool at your own risk.
