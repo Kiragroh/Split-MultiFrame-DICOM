@@ -1,7 +1,7 @@
 # Split-MultiFrame-DICOM
 
 ## Introduction
-**Split-MultiFrame-DICOM** is a tool to split Multi-Frame DICOM files into individual DICOM files. This is especially useful for users of the Eclipse TPS by Varian (<= v.18), which does not support Multi-Frame DICOM files.
+**Split-MultiFrame-DICOM** is a tool to split Multi-Frame DICOM files into individual DICOM files. This is especially useful for users of the Eclipse TPS by Varian (<= v.18), which does not support Multi-Frame DICOM files. The provided batch file is necessary because the default command line syntax for `dcm4che` processes one file at a time (see the [README](https://github.com/dcm4che/dcm4che/blob/master/dcm4che-tool/dcm4che-tool-emf2sf/README.md) for more details).
 
 ## Disclaimer
 This tool is provided without clinical recommendation. It is not intended for clinical use and should only be used for testing and research purposes. Use this tool at your own risk.
