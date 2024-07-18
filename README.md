@@ -61,6 +61,8 @@ for /r %%d in (.) do (
 echo Conversion complete! All files are stored in %OUTPUT_DIR%
 pause
 ```
+*Note: I hardcoded the path to the dcm4che bin folder (set "EMF2SF_PATH=C:\dcm4che\bin") in the batch file because there could be problems with environment variable settings. You have to change the path if you want to store the bin folder elsewhere.
+
 ### 4. Run the Batch Script
 Place the convert_multiframe.bat file in the directory containing the DICOM files to be converted.
 Double-click the batch file to run the script. The script will recursively search all subdirectories and convert all found Multi-Frame DICOM files into individual DICOM files.
