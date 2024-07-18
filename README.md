@@ -65,6 +65,13 @@ pause
 Place the convert_multiframe.bat file in the directory containing the DICOM files to be converted.
 Double-click the batch file to run the script. The script will recursively search all subdirectories and convert all found Multi-Frame DICOM files into individual DICOM files.
 After the conversion is complete, you will find the individual DICOM files in the newly created output_YYYY-MM-DD_HH-MM-SS directory in the same directory as the script.
+
+### 5. Organize DICOM Files with GUI-DICOMorganizer
+To make the resulting files more readable, you can use the **extra_GUI-DICOMorganizer** tool to sort the files by Patient, Acquisition Date, Series Number, and Series Description.
+
+#### Using GUI-DICOMorganizer
+1. Download the `extra_GUI-DICOMorganizer` folder from this repository.
+2. Open the `.exe` file. The rest should be self-explanatory.
 ### Troubleshooting
 The script cannot find the emf2sf command: Check the path to dcm4che\bin and ensure that the emf2sf command is indeed present in this directory.
 No files are converted: Ensure that the Multi-Frame DICOM files are in the same directory or subdirectories where the script is executed.
