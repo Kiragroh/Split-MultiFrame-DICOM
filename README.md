@@ -1,7 +1,7 @@
 # Split-MultiFrame-DICOM
 
 ## Introduction
-**Split-MultiFrame-DICOM** is a tool to split Multi-Frame DICOM files into individual DICOM files. This is especially useful for users of the Eclipse TPS by Varian (<= v.18), which does not support Multi-Frame DICOM files. The provided batch file is necessary because the default command line syntax for `dcm4che` processes one file at a time (see the [README](https://github.com/dcm4che/dcm4che/blob/master/dcm4che-tool/dcm4che-tool-emf2sf/README.md) for more details).
+**Split-MultiFrame-DICOM** is a tool to split Enhanced Multi-Frame DICOM files into individual DICOM files. This is especially useful for users of the Eclipse TPS by Varian (<= v.18), which does not support Multi-Frame DICOM files. The provided batch file is necessary because the default command line syntax for `dcm4che` processes one file at a time (see the [README](https://github.com/dcm4che/dcm4che/blob/master/dcm4che-tool/dcm4che-tool-emf2sf/README.md) for more details).
 
 ## Disclaimer
 This tool is provided without clinical recommendation. It is not intended for clinical use and should only be used for testing and research purposes. Use this tool at your own risk.
@@ -39,22 +39,20 @@ set "OUTPUT_DIR=%BATCH_DIR%\output_%datetime%"
 REM Create the output directory
 mkdir "%OUTPUT_DIR%"
 
-REM Path to emf2sf command
+REM Path to emf2sf command (adjust this path to the actual location of emf2sf)
 set "EMF2SF_PATH=C:\dcm4che\bin"
 
-REM Loop through all directories and subdirectories
-for /r %%d in (.) do (
+REM Loop through all directories and subdirectories from the current directory
+for /r "%BATCH_DIR%" %%d in (.) do (
     REM Skip directories that contain "output" in the path
     echo %%d | find /i "output" >nul
     if errorlevel 1 (
-        pushd %%d
         REM Check for all files in the directory
-        for %%f in (*.*) do (
+        for %%f in (%%d\*.*) do (
             REM Execute the emf2sf command for each found file
             echo Processing file %%f in directory %%d
             "%EMF2SF_PATH%\emf2sf" --out-dir "%OUTPUT_DIR%" "%%f"
         )
-        popd
     )
 )
 
