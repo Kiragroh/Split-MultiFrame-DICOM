@@ -14,17 +14,19 @@ mkdir "%OUTPUT_DIR%"
 REM Path to emf2sf command (adjust this path to the actual location of emf2sf)
 set "EMF2SF_PATH=C:\dcm4che\bin"
 
-REM Loop through all directories and subdirectories from the current directory
-for /r "%BATCH_DIR%" %%d in (.) do (
+REM Loop through all directories and subdirectories
+for /r %%d in (.) do (
     REM Skip directories that contain "output" in the path
     echo %%d | find /i "output" >nul
     if errorlevel 1 (
+        pushd %%d
         REM Check for all files in the directory
-        for %%f in (%%d\*.*) do (
+        for %%f in (*.*) do (
             REM Execute the emf2sf command for each found file
             echo Processing file %%f in directory %%d
             "%EMF2SF_PATH%\emf2sf" --out-dir "%OUTPUT_DIR%" "%%f"
         )
+        popd
     )
 )
 
