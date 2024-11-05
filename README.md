@@ -68,8 +68,9 @@ Place the convert_multiframe.bat file in the directory containing the DICOM file
 Double-click the batch file to run the script. The script will recursively search all subdirectories and convert all found Multi-Frame DICOM files into individual DICOM files.
 After the conversion is complete, you will find the individual DICOM files in the newly created output_YYYY-MM-DD_HH-MM-SS directory in the same directory as the script.
 
-### 5. Organize DICOM Files with GUI-DICOMorganizer
-To make the resulting files more readable, you can use the **extra_GUI-DICOMorganizer** tool to sort the files by Patient, Acquisition Date, Series Number, and Series Description.
+### 5. Extra
+- Organize DICOM Files with GUI-DICOMorganizer: To make the resulting files more readable, you can use the **extra_GUI-DICOMorganizer** tool to sort the files by Patient, Acquisition Date, Series Number, and Series Description.
+- Use a custom DICOM-Receiver that handles all your incoming data and converts when necessary (advantage: you can specify more easily who and where the DICOM data is stored.
 
 #### Using GUI-DICOMorganizer
 1. Download the `extra_GUI-DICOMorganizer` folder from this repository.
@@ -79,6 +80,10 @@ The script cannot find the emf2sf command: Check the path to dcm4che\bin and ens
 No files are converted: Ensure that the Multi-Frame DICOM files are in the same directory or subdirectories where the script is executed.
 Support and Contributions
 If you have questions or issues, please create an issue in this repository. Contributions are also welcome! Fork the repository and create a pull request with your improvements.
+
+#### Using Custom-DICOM-Receiver
+- install python 3.11 and packages mentioned in the file 'DICOM receiver_MRMULTI_parallel.py'
+- start the file 'DICOM receiver_MRMULTI_parallel.py'
 
 ### License
 This project is licensed under the MIT License.
