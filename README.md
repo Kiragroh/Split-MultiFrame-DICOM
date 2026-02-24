@@ -8,14 +8,14 @@ This tool is provided without clinical recommendation. It is not intended for cl
 
 ## Prerequisites
 - Windows operating system
-- [dcm4che 5.32.0](https://dcm4che.org/maven2/org/dcm4che/dcm4che-assembly/5.32.0/) downloaded and installed
+- [dcm4che 5.32.0](https://dcm4che.org/maven2/org/dcm4che/dcm4che-assembly/5.32.0/) downloaded and extracted to disk
 - Java 17 installed (tested with Java 17)
 - Basic knowledge of using batch scripts
 
 ## Step-by-Step Guide
 
 ### 1. Install dcm4che
-1. Download the `dcm4che` toolset from [this link](https://sourceforge.net/projects/dcm4che/files/dcm4che3/5.32.0/).
+1. Download the `dcm4che` toolset from [this link](https://dcm4che.org/maven2/org/dcm4che/dcm4che-assembly/5.32.0//).
 2. Extract the downloaded archive to a directory, e.g., `C:\dcm4che`.
 
 ### 2. Install Java 17
