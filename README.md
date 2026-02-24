@@ -8,7 +8,7 @@ This tool is provided without clinical recommendation. It is not intended for cl
 
 ## Prerequisites
 - Windows operating system
-- [dcm4che 5.32.0](https://sourceforge.net/projects/dcm4che/files/dcm4che3/5.32.0/) downloaded and installed
+- [dcm4che 5.32.0](https://dcm4che.org/maven2/org/dcm4che/dcm4che-assembly/5.32.0/) downloaded and installed
 - Java 17 installed (tested with Java 17)
 - Basic knowledge of using batch scripts
 
