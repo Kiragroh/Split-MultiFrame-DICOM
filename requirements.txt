@@ -1,0 +1,4 @@
+numpy
+pydicom
+# Optional for compressed pixel data:
+# pylibjpeg[all]
