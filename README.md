@@ -1,87 +1,205 @@
 # Split-MultiFrame-DICOM
 
 ## Introduction
-**Split-MultiFrame-DICOM** is a tool to split Enhanced Multi-Frame DICOM files into individual DICOM files. This is especially useful for users of the Eclipse TPS by Varian (<= v.18), which does not support Multi-Frame DICOM files. The provided batch file is necessary because the default command line syntax for `dcm4che` processes one file at a time (see the [README](https://github.com/dcm4che/dcm4che/blob/master/dcm4che-tool/dcm4che-tool-emf2sf/README.md) for more details).
+
+**Split-MultiFrame-DICOM** is a small toolset to split Enhanced Multi-Frame DICOM files into individual single-frame DICOM files.
+
+The **preferred method** is the included **Python script** because it is simpler to set up and does not require Java or `dcm4che`. This is especially useful for users of **Eclipse TPS by Varian (<= v18)**, which does not support Multi-Frame DICOM files.
+
+A **dcm4che / emf2sf** workflow is still included as an alternative fallback.
 
 ## Disclaimer
-This tool is provided without clinical recommendation. It is not intended for clinical use and should only be used for testing and research purposes. Use this tool at your own risk.
 
-## Prerequisites
+This tool is provided **without clinical recommendation**. It is **not intended for clinical use** and should only be used for **testing and research purposes**. Use this tool at your own risk.
+
+---
+
+## Quick Start
+
+```powershell
+python -m pip install -U pip
+python -m pip install -r requirements.txt
+python python_split.py
+```
+
+For compressed DICOM files:
+```powershell
+python -m pip install -U "pylibjpeg[all]"
+```
+
+---
+
+## Preferred Method: Python
+
+### Prerequisites
+
 - Windows operating system
-- [dcm4che 5.32.0](https://dcm4che.org/maven2/org/dcm4che/dcm4che-assembly/5.32.0/) downloaded and extracted to disk
-- Java 17 installed (tested with Java 17)
-- Basic knowledge of using batch scripts
+- Python 3 installed
+- The files `python_split.py` and `requirements.txt`
 
-## Step-by-Step Guide
+### 1. Install Python
+
+1. Download Python for Windows from the official Python website:  
+   https://www.python.org/downloads/windows/
+2. Start the installer
+3. **Important:** Enable **"Add Python to PATH"** during installation
+4. Finish the installation
+
+### 2. Verify Python Installation
+
+Open **PowerShell** or **Command Prompt** and run:
+
+```powershell
+python --version
+python -m pip --version
+```
+
+If both commands work, Python is installed correctly.
+
+### 3. Download This Repository
+
+Download or clone this repository and place the following files into your working folder:
+
+- `python_split.py`
+- `requirements.txt`
+
+You can also place your Enhanced Multi-Frame DICOM file directly into the same folder.
+
+### 4. Install the Required Python Packages
+
+Open PowerShell or Command Prompt in the repository folder and run:
+
+```powershell
+python -m pip install -U pip
+python -m pip install -r requirements.txt
+```
+
+### 5. Run the Python Script
+
+If your input file is already in the same folder and named for example `multi.dcm`, run:
+
+```powershell
+python python_split.py
+```
+
+Or provide the file explicitly:
+
+```powershell
+python python_split.py multi.dcm
+```
+
+You can also pass a full path:
+
+```powershell
+python python_split.py "C:\path\to\your\enhanced_multiframe.dcm"
+```
+
+### 6. Output
+
+The script creates a new output folder next to the input file:
+
+```
+<input_filename>_split
+```
+
+**Example:**
+```
+multi_split
+```
+
+The folder will contain the generated single-frame DICOM files:
+
+```
+IM_0001.dcm
+IM_0002.dcm
+IM_0003.dcm
+...
+```
+
+### 7. Optional: Support for Compressed DICOM Pixel Data
+
+If the script fails because the source DICOM uses compressed pixel data, install an additional decoder package:
+
+```powershell
+python -m pip install -U "pylibjpeg[all]"
+```
+
+Then run the script again.
+
+---
+
+## Alternative Method: dcm4che / emf2sf
+
+If you prefer the Java-based route, you can still use `dcm4che` and `emf2sf`.
+
+### Prerequisites
+
+- Windows operating system
+- dcm4che 5.32.0 downloaded and extracted
+- Java 17 installed
+- Basic knowledge of batch scripts
 
 ### 1. Install dcm4che
-1. Download the `dcm4che` toolset from [this link](https://dcm4che.org/maven2/org/dcm4che/dcm4che-assembly/5.32.0//).
-2. Extract the downloaded archive to a directory, e.g., `C:\dcm4che`.
+
+1. Download the dcm4che toolset from:  
+   https://dcm4che.org/maven2/org/dcm4che/dcm4che-assembly/5.32.0/
+2. Extract the archive to a directory, for example:  
+   `C:\dcm4che`
 
 ### 2. Install Java 17
-1. Download Java 17 from the official [Oracle website](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html).
-2. Install Java 17 and add the Java binary path (e.g., `C:\Program Files\Java\jdk-17\bin`) to the PATH environment variable to ensure Java commands are available from the command prompt.
 
-### 3. Create the Batch Script
-Create a batch file (`convert_multiframe.bat`) with the following content:
+1. Install Java 17
+2. Verify Java is available in the terminal:
+   ```powershell
+   java -version
+   ```
 
-```batch
-@echo off
-REM Find and process all enhanced DICOM files in subdirectories
+### 3. Use the Batch Script
 
-REM Get the directory of the batch file
-set "BATCH_DIR=%~dp0"
+Use the provided `convert_multiframe.bat` workflow if you want to process multiple files recursively with `emf2sf`.
 
-REM Create a timestamp for the output directory
-for /f "tokens=1-6 delims=:. " %%i in ("%date% %time%") do set "datetime=%%i-%%j-%%k_%%l-%%m-%%n"
-set "OUTPUT_DIR=%BATCH_DIR%\output_%datetime%"
+---
 
-REM Create the output directory
-mkdir "%OUTPUT_DIR%"
+## Extra Tools
 
-REM Path to emf2sf command (adjust this path to the actual location of emf2sf)
-set "EMF2SF_PATH=C:\dcm4che\bin"
+### GUI-DICOMorganizer
 
-REM Loop through all directories and subdirectories
-for /r %%d in (.) do (
-    REM Skip directories that contain "output" in the path
-    echo %%d | find /i "output" >nul
-    if errorlevel 1 (
-        pushd %%d
-        REM Check for all files in the directory
-        for %%f in (*.*) do (
-            REM Execute the emf2sf command for each found file
-            echo Processing file %%f in directory %%d
-            "%EMF2SF_PATH%\emf2sf" --out-dir "%OUTPUT_DIR%" "%%f"
-        )
-        popd
-    )
-)
+Can be used to reorganize the resulting files by patient, date, series number, or series description.
 
-echo Conversion complete! All files are stored in %OUTPUT_DIR%
-pause
-```
-*Note: I hardcoded the path to the dcm4che bin folder (set "EMF2SF_PATH=C:\dcm4che\bin") in the batch file because there could be problems with environment variable settings. You have to change the path if you want to store the bin folder elsewhere.
+**Usage:**
+1. Download the `extra_GUI-DICOMorganizer` folder from this repository
+2. Start the `.exe` file
 
-### 4. Run the Batch Script
-Place the convert_multiframe.bat file in the directory containing the DICOM files to be converted.
-Double-click the batch file to run the script. The script will recursively search all subdirectories and convert all found Multi-Frame DICOM files into individual DICOM files.
-After the conversion is complete, you will find the individual DICOM files in the newly created output_YYYY-MM-DD_HH-MM-SS directory in the same directory as the script.
+### Custom DICOM Receiver
 
-### 5. Extra
-- Organize DICOM Files with GUI-DICOMorganizer: To make the resulting files more readable, you can use the **extra_GUI-DICOMorganizer** tool to sort the files by Patient, Acquisition Date, Series Number, and Series Description.
-- Use a custom DICOM-Receiver that handles all your incoming data and converts when necessary (advantage: you can specify more easily who and where the DICOM data is stored.
-#### Using Custom-DICOM-Receiver
-- install python 3.11 and packages mentioned in the file 'DICOM receiver_MRMULTI_parallel.py'
-- start the file 'DICOM receiver_MRMULTI_parallel.py'
-#### Using GUI-DICOMorganizer
-1. Download the `extra_GUI-DICOMorganizer` folder from this repository.
-2. Open the `.exe` file. The rest should be self-explanatory.
-### Troubleshooting
-The script cannot find the emf2sf command: Check the path to dcm4che\bin and ensure that the emf2sf command is indeed present in this directory.
-No files are converted: Ensure that the Multi-Frame DICOM files are in the same directory or subdirectories where the script is executed.
-Support and Contributions
-If you have questions or issues, please create an issue in this repository. Contributions are also welcome! Fork the repository and create a pull request with your improvements.
+Can be used if you want automatic receiving, storing, and conversion of incoming data.
 
-### License
-This project is licensed under the MIT License.
+**Usage:**
+1. Install Python and the packages required by the receiver script
+2. Start the file `DICOM receiver_MRMULTI_parallel.py`
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `python` is not recognized | Python is either not installed correctly or was not added to PATH during installation. Try `python --version`. If that fails, reinstall Python and make sure "Add Python to PATH" is checked. |
+| Packages cannot be installed | Run: `python -m pip install -U pip` followed by `python -m pip install -r requirements.txt` |
+| Compressed pixel data cannot be read | Install the optional decoder: `python -m pip install -U "pylibjpeg[all]"` |
+| Eclipse or another importer reports missing geometry tags | The source Enhanced DICOM may store geometry differently than expected. Validate the generated tags such as: `PixelSpacing`, `ImagePositionPatient`, `ImageOrientationPatient`, `SliceThickness` |
+| Java / dcm4che issues | - Check that Java 17 is installed<br>- Check that `java -version` works<br>- Check the path to the `dcm4che\bin` folder |
+
+---
+
+## Support and Contributions
+
+If you have questions or issues, please **create an issue** in this repository.
+
+**Contributions are welcome.** Fork the repository and create a pull request with your improvements.
+
+---
+
+## License
+
+This project is licensed under the **MIT License**.
