@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import sys
@@ -51,8 +52,8 @@ def find_input_file(script_dir: Path) -> Path:
     )
     if not candidates:
         raise FileNotFoundError(
-            "Keine DICOM-Datei gefunden. "
-            "Lege die Enhanced-MR-Datei neben das Skript oder übergib sie als Argument."
+            "No DICOM file found. Place the Enhanced MR file next to the script "
+            "or pass it as a command-line argument."
         )
     return candidates[0]
 
@@ -72,11 +73,6 @@ def add_dataset_elements(dest: Dataset, src: Dataset) -> None:
 
 
 def flatten_functional_groups(dest: Dataset, fg_container: Dataset | None) -> None:
-    """
-    Orientiert sich an dcm4che/emf2sf:
-    - ReferencedImageSequence direkt übernehmen
-    - alle übrigen Functional Group Sequence Items (erstes Item) abflachen
-    """
     if fg_container is None:
         return
 
@@ -85,6 +81,7 @@ def flatten_functional_groups(dest: Dataset, fg_container: Dataset | None) -> No
             continue
         if not elem.value:
             continue
+
         first_item = elem.value[0]
         if not isinstance(first_item, Dataset):
             continue
@@ -104,6 +101,113 @@ def convert_frame_type_to_image_type(ds: Dataset) -> None:
         del ds.FrameType
 
 
+def _first_str(value, default=None):
+    if value is None:
+        return default
+    if isinstance(value, (list, tuple)):
+        if not value:
+            return default
+        return str(value[0])
+    return str(value)
+
+
+def _nth_str(value, idx, default=None):
+    if value is None:
+        return default
+    if isinstance(value, (list, tuple)):
+        if len(value) > idx:
+            return str(value[idx])
+        return default
+    if idx == 0:
+        return str(value)
+    return default
+
+
+def synthesize_mr_legacy_attributes(ds: Dataset) -> None:
+    eff_te = getattr(ds, "EffectiveEchoTime", None)
+    try:
+        eff_te_num = float(eff_te) if eff_te is not None and str(eff_te) != "" else 0.0
+    except Exception:
+        eff_te_num = 0.0
+
+    ds.EchoTime = "" if eff_te_num == 0.0 else eff_te_num
+
+    scanning_sequence = []
+    eps = _first_str(getattr(ds, "EchoPulseSequence", None))
+
+    if eps != "GRADIENT":
+        scanning_sequence.append("SE")
+    if eps != "SPIN":
+        scanning_sequence.append("GR")
+    if _first_str(getattr(ds, "InversionRecovery", None)) == "YES":
+        scanning_sequence.append("IR")
+    if _first_str(getattr(ds, "EchoPlanarPulseSequence", None)) == "YES":
+        scanning_sequence.append("EP")
+
+    if not scanning_sequence:
+        scanning_sequence = ["SE"]
+    ds.ScanningSequence = scanning_sequence
+
+    sequence_variant = []
+
+    if _first_str(getattr(ds, "SegmentedKSpaceTraversal", None)) != "SINGLE":
+        sequence_variant.append("SK")
+
+    mt = _first_str(getattr(ds, "MagnetizationTransfer", None))
+    if mt is not None and mt != "NONE":
+        sequence_variant.append("MTC")
+
+    ssps = _first_str(getattr(ds, "SteadyStatePulseSequence", None))
+    if ssps is not None and ssps != "NONE":
+        sequence_variant.append("TRSS" if ssps == "TIME_REVERSED" else "SS")
+
+    sp = _first_str(getattr(ds, "Spoiling", None))
+    if sp is not None and sp != "NONE":
+        sequence_variant.append("SP")
+
+    op = _first_str(getattr(ds, "OversamplingPhase", None))
+    if op is not None and op != "NONE":
+        sequence_variant.append("OSP")
+
+    if not sequence_variant:
+        sequence_variant = ["NONE"]
+    ds.SequenceVariant = sequence_variant
+
+    scan_options = []
+
+    per = _first_str(getattr(ds, "RectilinearPhaseEncodeReordering", None))
+    if per is not None and per != "LINEAR":
+        scan_options.append("PER")
+
+    frame_type3 = _nth_str(getattr(ds, "ImageType", None), 2, "")
+    if frame_type3 == "ANGIO":
+        ds.AngioFlag = "Y"
+    if frame_type3.startswith("CARD"):
+        scan_options.append("CG")
+    if frame_type3.endswith("RESP_GATED"):
+        scan_options.append("RG")
+
+    pfd = _first_str(getattr(ds, "PartialFourierDirection", None))
+    if pfd == "PHASE":
+        scan_options.append("PFP")
+    elif pfd == "FREQUENCY":
+        scan_options.append("PFF")
+
+    spatial_presat = _first_str(getattr(ds, "SpatialPresaturation", None))
+    if spatial_presat is not None and spatial_presat != "NONE":
+        scan_options.append("SP")
+
+    sss = _first_str(getattr(ds, "SpectrallySelectedSuppression", None))
+    if sss is not None and sss.startswith("FAT"):
+        scan_options.append("FS")
+
+    fc = _first_str(getattr(ds, "FlowCompensation", None))
+    if fc is not None and fc != "NONE":
+        scan_options.append("FC")
+
+    ds.ScanOptions = scan_options if scan_options else ""
+
+
 def ensure_even_length(data: bytes) -> bytes:
     return data if len(data) % 2 == 0 else data + b"\x00"
 
@@ -117,7 +221,7 @@ def set_required_pixel_tags_from_array(ds: Dataset, frame: np.ndarray) -> None:
     elif frame.ndim == 3:
         rows, cols, samples_per_pixel = frame.shape
     else:
-        raise ValueError(f"Unerwartete Frame-Dimension: {frame.shape}")
+        raise ValueError(f"Unexpected frame dimensions: {frame.shape}")
 
     ds.Rows = int(rows)
     ds.Columns = int(cols)
@@ -145,8 +249,26 @@ def validate_required_geometry(ds: Dataset, frame_no: int) -> None:
 
     if missing:
         raise ValueError(
-            f"Frame {frame_no}: erforderliche Geometrie-Tags fehlen nach dem Abflachen der Functional Groups: "
-            + ", ".join(missing)
+            f"Frame {frame_no}: required geometry tags are missing after flattening "
+            f"functional groups: {', '.join(missing)}"
+        )
+
+
+def validate_required_mr_tags(ds: Dataset, frame_no: int) -> None:
+    missing = []
+
+    if not hasattr(ds, "ScanningSequence") or not getattr(ds, "ScanningSequence"):
+        missing.append("ScanningSequence (0018,0020)")
+    if not hasattr(ds, "SequenceVariant") or not getattr(ds, "SequenceVariant"):
+        missing.append("SequenceVariant (0018,0021)")
+    if not hasattr(ds, "ScanOptions"):
+        missing.append("ScanOptions (0018,0022)")
+    if not hasattr(ds, "EchoTime"):
+        missing.append("EchoTime (0018,0081)")
+
+    if missing:
+        raise ValueError(
+            f"Frame {frame_no}: required MR legacy tags are missing: {', '.join(missing)}"
         )
 
 
@@ -162,16 +284,13 @@ def main():
 
     n_frames = int(getattr(ds, "NumberOfFrames", 1))
     if n_frames <= 1:
-        raise ValueError("Die Datei ist nicht multiframe oder enthält nur 1 Frame.")
+        raise ValueError("The file is not multiframe or contains only 1 frame.")
 
-    print(f"Eingabe: {input_path.name}")
-    print(f"Frames:  {n_frames}")
-    print(f"Output:  {out_dir}")
+    print(f"Input:  {input_path.name}")
+    print(f"Frames: {n_frames}")
+    print(f"Output: {out_dir}")
 
-    # Kompatibler Weg ohne pydicom.pixels.pixel_array
     all_frames = ds.pixel_array
-
-    # Wie emf2sf standardmäßig: neue SeriesInstanceUID
     new_series_uid = generate_uid()
 
     shared_fgs = None
@@ -179,7 +298,7 @@ def main():
         shared_fgs = ds.SharedFunctionalGroupsSequence[0]
 
     if not hasattr(ds, "PerFrameFunctionalGroupsSequence") or not ds.PerFrameFunctionalGroupsSequence:
-        raise ValueError("PerFrameFunctionalGroupsSequence fehlt oder ist leer.")
+        raise ValueError("PerFrameFunctionalGroupsSequence is missing or empty.")
 
     for i in range(n_frames):
         frame_no = i + 1
@@ -190,14 +309,12 @@ def main():
 
         per_frame_fgs = ds.PerFrameFunctionalGroupsSequence[i]
 
-        # emuliert dcm4che: Shared zuerst, dann Per-Frame drüber
         flatten_functional_groups(out, shared_fgs)
         flatten_functional_groups(out, per_frame_fgs)
 
-        # emuliert dcm4che: ImageType aus FrameType erzeugen
         convert_frame_type_to_image_type(out)
+        synthesize_mr_legacy_attributes(out)
 
-        # Auf klassisches Single-Frame MR umstellen
         new_sop_uid = generate_uid()
         out.SOPClassUID = MRImageStorage
         out.SOPInstanceUID = new_sop_uid
@@ -209,17 +326,13 @@ def main():
         else:
             out.SeriesDescription = "Split Enhanced MR"
 
-        # Pixel-Daten + VR
         set_required_pixel_tags_from_array(out, frame)
-
-        # Fail fast, falls die für den Import kritischen Tags noch fehlen
         validate_required_geometry(out, frame_no)
+        validate_required_mr_tags(out, frame_no)
 
-        # Schreibmodus
         out.is_little_endian = True
         out.is_implicit_VR = False
 
-        # File Meta
         out.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
         out.file_meta.MediaStorageSOPClassUID = MRImageStorage
         out.file_meta.MediaStorageSOPInstanceUID = new_sop_uid
@@ -234,9 +347,9 @@ def main():
             little_endian=True,
         )
 
-        print(f"  geschrieben: {outfile.name}")
+        print(f"  written: {outfile.name}")
 
-    print("Fertig.")
+    print("Done.")
 
 
 if __name__ == "__main__":
