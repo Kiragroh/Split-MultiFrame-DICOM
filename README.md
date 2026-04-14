@@ -1,5 +1,5 @@
 # Split-MultiFrame-DICOM
-
+![Banner](banner.png)
 ## Introduction
 
 **Split-MultiFrame-DICOM** is a small toolset to split Enhanced Multi-Frame DICOM files into individual single-frame DICOM files.
